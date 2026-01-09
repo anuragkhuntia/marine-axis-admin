@@ -55,10 +55,6 @@ export function BlogsPage() {
     },
   });
 
-  useEffect(() => {
-    fetchBlogData();
-  }, []);
-
   const fetchBlogData = async () => {
     try {
       // Fetch blogs using admin endpoint
@@ -78,6 +74,10 @@ export function BlogsPage() {
       });
     }
   };
+
+  useEffect(() => {
+    fetchBlogData();
+  }, [fetchItems, toast]);
 
   // Apply filters when search or filter values change
   useEffect(() => {

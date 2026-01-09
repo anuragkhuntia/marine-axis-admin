@@ -227,7 +227,7 @@ export const DATE_FORMATS = {
 
 export const VALIDATION_RULES = {
   EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-  PHONE: /^\+?[\d\s\-\(\)]+$/,
+  PHONE: /^\+?[\d\s\-()]+$/,
   URL: /^https?:\/\/.+/,
   PASSWORD: {
     MIN_LENGTH: 8,

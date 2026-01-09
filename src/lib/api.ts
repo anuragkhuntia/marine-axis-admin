@@ -89,32 +89,42 @@ class ApiClient {
       return new Error(ERROR_MESSAGES.NETWORK_ERROR);
     }
 
-    const { status, data } = error.response as any;
+    const resp = error.response as AxiosResponse | undefined;
+    const status = resp?.status;
+    const data = resp?.data as Record<string, unknown> | undefined;
+
+    const extractMessage = (d?: Record<string, unknown>) => {
+      if (!d) return undefined;
+      const m = d['message'];
+      return typeof m === 'string' ? m : undefined;
+    };
 
     switch (status) {
-      case 400:
+      case 400: {
         // Try to parse validation errors for better error messages
-        let errorMessage = data?.message || ERROR_MESSAGES.VALIDATION_ERROR;
+        let errorMessage = extractMessage(data) || ERROR_MESSAGES.VALIDATION_ERROR;
         if (data?.errors) {
           try {
             // Errors might be a JSON string or an array
-            const errors = typeof data.errors === 'string' ? JSON.parse(data.errors) : data.errors;
+            const errors = typeof data.errors === 'string' ? JSON.parse(data.errors as string) : data.errors;
             if (Array.isArray(errors) && errors.length > 0) {
               // Extract field-specific error messages
-              const fieldErrors = errors.map((err: any) => {
-                const field = err.path?.join('.') || 'field';
+              const fieldErrors = errors.map((err: Record<string, unknown>) => {
+                const pathArray = err.path;
+                const field = Array.isArray(pathArray) ? pathArray.join('.') : 'field';
                 return `${field}: ${err.message}`;
               });
               errorMessage = `Validation failed: ${fieldErrors.join(', ')}`;
             }
           } catch (parseError) {
             // If parsing fails, use the original message
-            errorMessage = data?.message || ERROR_MESSAGES.VALIDATION_ERROR;
+            errorMessage = extractMessage(data) || ERROR_MESSAGES.VALIDATION_ERROR;
           }
         }
         const errorObj = new Error(errorMessage);
-        (errorObj as any).errors = data?.errors; // Attach raw errors for detailed handling
+        (errorObj as unknown as Record<string, unknown>).errors = data?.errors;
         return errorObj;
+      }
       case 401:
         return new Error(ERROR_MESSAGES.UNAUTHORIZED);
       case 403:
@@ -124,7 +134,7 @@ class ApiClient {
       case 500:
         return new Error(ERROR_MESSAGES.SERVER_ERROR);
       default:
-        return new Error(data?.message || ERROR_MESSAGES.GENERIC_ERROR);
+        return new Error(extractMessage(data) || ERROR_MESSAGES.GENERIC_ERROR);
     }
   }
 

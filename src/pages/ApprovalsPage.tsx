@@ -62,10 +62,6 @@ export function ApprovalsPage() {
   const [approvedApprovals, setApprovedApprovals] = useState<ApprovalRequest[]>([]);
   const [rejectedApprovals, setRejectedApprovals] = useState<ApprovalRequest[]>([]);
 
-  useEffect(() => {
-    fetchApprovalData();
-  }, []);
-
   const fetchApprovalData = async () => {
     try {
       // Fetch pending approvals
@@ -121,6 +117,10 @@ export function ApprovalsPage() {
       setApprovalStats({ pending: 1, approved: 0, rejected: 0, total: 1 });
     }
   };
+
+  useEffect(() => {
+    fetchApprovalData();
+  }, [toast]);
 
   const handleViewDetails = (approval: ApprovalRequest) => {
     setSelectedApproval(approval);

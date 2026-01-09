@@ -195,7 +195,7 @@ export const sanitize = {
   },
 
   phone: (input: string): string => {
-    return input.replace(/[^\d\+\-\(\)\s]/g, '');
+    return input.replace(/[^\d+\-()\\s]/g, '');
   },
 
   url: (input: string): string => {
