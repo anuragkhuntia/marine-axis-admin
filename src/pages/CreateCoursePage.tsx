@@ -577,3 +577,5 @@ export function CreateCoursePage() {
     </div>
   );
 }
+
+export default CreateCoursePage;
