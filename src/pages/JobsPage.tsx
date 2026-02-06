@@ -116,6 +116,26 @@ export function JobsPage() {
     }
   };
 
+  const handleUnpublish = async (jobId: string) => {
+    try {
+      const response = await api.jobs.unpublish(jobId);
+      
+      if (response.success) {
+        toast({
+          title: 'Job unpublished',
+          description: 'Job has been withdrawn and moved back to draft',
+        });
+        fetchItems(); // Refresh the list
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Error unpublishing job',
+        description: error.message || 'Failed to unpublish job. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleDelete = async (jobId: string) => {
     try {
       const success = await deleteItem(jobId);
@@ -405,10 +425,16 @@ export function JobsPage() {
                             </DropdownMenuItem>
                           )}
                           {(job.status === 'open' || job.status === 'published') && (
-                            <DropdownMenuItem onClick={() => handleClose(job.id)}>
-                              <Pause className="mr-2 h-4 w-4" />
-                              Close
-                            </DropdownMenuItem>
+                            <>
+                              <DropdownMenuItem onClick={() => handleUnpublish(job.id)}>
+                                <Pause className="mr-2 h-4 w-4" />
+                                Unpublish
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleClose(job.id)}>
+                                <Pause className="mr-2 h-4 w-4" />
+                                Close
+                              </DropdownMenuItem>
+                            </>
                           )}
                           <DropdownMenuSeparator />
                           <AlertDialog>

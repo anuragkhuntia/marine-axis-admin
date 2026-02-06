@@ -1025,29 +1025,12 @@ class ApiClient {
     // GET /api/v1/courses - List all courses with pagination and filters
     // Query params: page, limit, categoryId, level, status, providerId, search
     list: async (params?: any) => {
-      try {
-        return await this.getPaginated('/courses', params);
-      } catch (error: any) {
-        // Fallback to mock data if API is unavailable
-        console.warn('Courses API unavailable, using mock data:', error.message);
-        const { MOCK_COURSES, generatePaginatedResponse } = await import('./mockData');
-        return generatePaginatedResponse(MOCK_COURSES, params?.page || 1, params?.limit || 100);
-      }
+      return this.getPaginated('/courses', params);
     },
 
     // GET /api/v1/courses/:id - Get single course by ID
     get: async (id: string) => {
-      try {
-        return await this.get(`/courses/${id}`);
-      } catch (error: any) {
-        console.warn('Course API unavailable, using mock data:', error.message);
-        const { MOCK_COURSES } = await import('./mockData');
-        const course = MOCK_COURSES.find((c: any) => c.id === id);
-        if (course) {
-          return { success: true, data: course };
-        }
-        throw new Error('Course not found');
-      }
+      return this.get(`/courses/${id}`);
     },
 
     // POST /api/v1/courses - Create new course
@@ -1069,25 +1052,12 @@ class ApiClient {
 
     // GET /api/v1/courses/featured - Get featured courses
     getFeatured: async (params?: any) => {
-      try {
-        return await this.get('/courses/featured', params);
-      } catch (error: any) {
-        console.warn('Featured courses API unavailable, using mock data:', error.message);
-        const { MOCK_COURSES, generatePaginatedResponse } = await import('./mockData');
-        const featured = MOCK_COURSES.filter((c: any) => c.featured);
-        return generatePaginatedResponse(featured, params?.page || 1, params?.limit || 100);
-      }
+      return this.get('/courses/featured', params);
     },
 
     // GET /api/v1/courses/stats - Get course statistics
     getStats: async () => {
-      try {
-        return await this.get('/courses/stats');
-      } catch (error: any) {
-        console.warn('Course stats API unavailable, using mock data:', error.message);
-        const { MOCK_COURSE_STATS } = await import('./mockData');
-        return { success: true, data: MOCK_COURSE_STATS };
-      }
+      return this.get('/courses/stats');
     },
   };
 

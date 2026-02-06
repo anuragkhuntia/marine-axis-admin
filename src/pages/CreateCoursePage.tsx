@@ -24,7 +24,6 @@ const CURRENCIES = [
 
 interface CourseFormData extends CreateCourseForm {
   images: string[];
-  newImage: string;
 }
 
 export function CreateCoursePage() {
@@ -35,6 +34,8 @@ export function CreateCoursePage() {
   const [loading, setLoading] = useState(false);
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [isEditMode, setIsEditMode] = useState(!!id);
+  const [newSyllabusItem, setNewSyllabusItem] = useState('');
+  const [newRequirement, setNewRequirement] = useState('');
 
   const [formData, setFormData] = useState<CourseFormData>({
     title: '',
@@ -52,7 +53,6 @@ export function CreateCoursePage() {
     certificationName: '',
     featured: false,
     images: [],
-    newImage: '',
   });
 
   // Load categories
@@ -83,7 +83,6 @@ export function CreateCoursePage() {
           setFormData({
             ...course,
             images: course.images || [],
-            newImage: '',
           });
         } catch (error) {
           console.error('Failed to load course:', error);
@@ -121,12 +120,12 @@ export function CreateCoursePage() {
   };
 
   const handleAddSyllabusItem = () => {
-    if (formData.newImage.trim()) {
+    if (newSyllabusItem.trim()) {
       setFormData(prev => ({
         ...prev,
-        syllabus: [...(prev.syllabus || []), formData.newImage],
-        newImage: '',
+        syllabus: [...(prev.syllabus || []), newSyllabusItem],
       }));
+      setNewSyllabusItem('');
     }
   };
 
@@ -138,12 +137,12 @@ export function CreateCoursePage() {
   };
 
   const handleAddRequirement = () => {
-    if (formData.newImage.trim()) {
+    if (newRequirement.trim()) {
       setFormData(prev => ({
         ...prev,
-        requirements: [...(prev.requirements || []), formData.newImage],
-        newImage: '',
+        requirements: [...(prev.requirements || []), newRequirement],
       }));
+      setNewRequirement('');
     }
   };
 
@@ -195,9 +194,11 @@ export function CreateCoursePage() {
         navigate(`/courses/${response.data?.id}`);
       }
     } catch (error: any) {
+      console.error('Course creation error:', error);
+      const errorMessage = error?.message || 'Failed to save course. Please check if the backend is running.';
       toast({
         title: 'Error',
-        description: error?.message || 'Failed to save course',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
@@ -411,8 +412,8 @@ export function CreateCoursePage() {
             <div className="flex gap-2">
               <Input
                 placeholder="Add syllabus item..."
-                value={formData.newImage}
-                onChange={(e) => setFormData(prev => ({ ...prev, newImage: e.target.value }))}
+                value={newSyllabusItem}
+                onChange={(e) => setNewSyllabusItem(e.target.value)}
                 onKeyPress={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
@@ -459,8 +460,8 @@ export function CreateCoursePage() {
             <div className="flex gap-2">
               <Input
                 placeholder="Add requirement..."
-                value={formData.newImage}
-                onChange={(e) => setFormData(prev => ({ ...prev, newImage: e.target.value }))}
+                value={newRequirement}
+                onChange={(e) => setNewRequirement(e.target.value)}
                 onKeyPress={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
