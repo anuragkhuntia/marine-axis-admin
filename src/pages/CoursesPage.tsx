@@ -297,3 +297,5 @@ export function CoursesPage() {
     </div>
   );
 }
+
+export default CoursesPage;
