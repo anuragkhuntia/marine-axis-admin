@@ -32,6 +32,11 @@ import CreateJobPage from "./pages/CreateJobPage";
 import EditJobPage from "./pages/EditJobPage";
 import JobDetailPage from "./pages/JobDetailPage";
 
+// Courses Pages
+import CoursesPage from "./pages/CoursesPage";
+import CreateCoursePage from "./pages/CreateCoursePage";
+import CourseDetailPage from "./pages/CourseDetailPage";
+
 // Categories Pages
 import CategoriesPage from "./pages/CategoriesPage";
 
@@ -142,6 +147,12 @@ const App = () => (
                 <Route path="jobs/create" element={<CreateJobPage />} />
                 <Route path="jobs/:id" element={<JobDetailPage />} />
                 <Route path="jobs/:id/edit" element={<EditJobPage />} />
+                
+                {/* Courses Management */}
+                <Route path="courses" element={<CoursesPage />} />
+                <Route path="courses/new" element={<CreateCoursePage />} />
+                <Route path="courses/:id" element={<CourseDetailPage />} />
+                <Route path="courses/:id/edit" element={<CreateCoursePage />} />
                 
                 {/* Categories */}
                 <Route path="categories" element={<CategoriesPage />} />

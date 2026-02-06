@@ -13,6 +13,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { sanitize } from '@/lib/auth';
 import api from '@/lib/api';
+import { MOCK_COUNTRIES, MOCK_CATEGORIES } from '@/lib/mockData';
 import { Category } from '@/types';
 
 interface ProviderFormData {
@@ -250,9 +251,9 @@ export function ProviderForm({ initialData, mode, onSubmit, onCancel, loading = 
           setCategories(activeCategories);
         }
       } catch (error) {
-        console.error('Failed to fetch categories:', error);
-        // Set empty array on error so UI doesn't show loading forever
-        setCategories([]);
+        console.warn('Failed to fetch categories, using fallback:', error);
+        // Use fallback categories from mock data
+        setCategories(MOCK_CATEGORIES as any);
       } finally {
         setLoadingCategories(false);
       }
@@ -833,7 +834,7 @@ export function ProviderForm({ initialData, mode, onSubmit, onCancel, loading = 
                 value={formData.address?.country || ''}
                 onValueChange={(value) => handleInputChange('address.country', value)}
               >
-                <SelectTrigger>
+                <SelectTrigger id="address.country">
                   <SelectValue placeholder="Select country" />
                 </SelectTrigger>
                 <SelectContent className="max-h-[300px]">

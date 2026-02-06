@@ -23,6 +23,7 @@ import {
   FolderKanban,
   Share2,
   UserCircle,
+  GraduationCap,
 } from 'lucide-react';
 
 import {
@@ -106,6 +107,23 @@ const navigationItems = [
       {
         title: 'Create Job',
         url: ROUTES.JOB_CREATE,
+        icon: User,
+      },
+    ],
+  },
+  {
+    title: 'Course Management',
+    icon: GraduationCap,
+    roles: ['superadmin', 'admin'],
+    children: [
+      {
+        title: 'All Courses',
+        url: '/courses',
+        icon: GraduationCap,
+      },
+      {
+        title: 'Create Course',
+        url: '/courses/new',
         icon: User,
       },
     ],

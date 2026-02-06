@@ -53,6 +53,12 @@ export const ROUTES = {
   JOB_EDIT: '/jobs/:id/edit',
   JOB_DETAIL: '/jobs/:id',
   
+  // Course Management
+  COURSES: '/courses',
+  COURSE_CREATE: '/courses/new',
+  COURSE_EDIT: '/courses/:id/edit',
+  COURSE_DETAIL: '/courses/:id',
+  
   // Category Management
   CATEGORIES: '/categories',
   CATEGORY_CREATE: '/categories/create',

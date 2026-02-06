@@ -239,6 +239,72 @@ export interface AuditLog {
   createdAt: string;
 }
 
+export interface Course {
+  id: string;
+  title: string;
+  description: string;
+  providerId: string;
+  provider?: Provider;
+  categoryIds: string[];
+  categories?: Category[];
+  level: 'beginner' | 'intermediate' | 'advanced';
+  duration: number; // in hours
+  maxParticipants: number;
+  price: number;
+  currency: string;
+  instructor?: string;
+  syllabus?: string[];
+  requirements?: string[];
+  certificationProvided: boolean;
+  certificationName?: string;
+  featured: boolean;
+  status: 'active' | 'inactive' | 'archived';
+  images: string[];
+  enrollments: number;
+  rating: number;
+  reviews: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CourseAvailability {
+  id: string;
+  courseId: string;
+  course?: Course;
+  startDate: string;
+  endDate: string;
+  startTime: string;
+  endTime: string;
+  daysOfWeek: string[]; // ['Monday', 'Tuesday', etc.]
+  location?: string;
+  isOnline: boolean;
+  spotsAvailable: number;
+  spotsBooked: number;
+  status: 'active' | 'inactive' | 'full' | 'cancelled';
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CourseBooking {
+  id: string;
+  courseId: string;
+  course?: Course;
+  availabilityId: string;
+  availability?: CourseAvailability;
+  customerId: string;
+  customer?: User;
+  participantName: string;
+  participantEmail: string;
+  participantPhone?: string;
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  totalPrice: number;
+  currency: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // API Response types
 export interface ApiResponse<T = any> {
   data: T;
@@ -335,6 +401,35 @@ export interface CreateCategoryForm {
   icon: string;
   parentId?: string;
   order?: number;
+}
+
+export interface CreateCourseForm {
+  title: string;
+  description: string;
+  categoryIds: string[];
+  level: 'beginner' | 'intermediate' | 'advanced';
+  duration: number;
+  maxParticipants: number;
+  price: number;
+  currency: string;
+  instructor?: string;
+  syllabus?: string[];
+  requirements?: string[];
+  certificationProvided: boolean;
+  certificationName?: string;
+  featured: boolean;
+}
+
+export interface CourseAvailabilityForm {
+  startDate: string;
+  endDate: string;
+  startTime: string;
+  endTime: string;
+  daysOfWeek: string[];
+  location?: string;
+  isOnline: boolean;
+  spotsAvailable: number;
+  notes?: string;
 }
 
 // Utility types

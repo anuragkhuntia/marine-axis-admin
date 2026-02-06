@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Blog } from '../types';
 import useCRUD from '../hooks/useCRUD';
 import api from '../lib/api';
+import { MOCK_BLOGS } from '../lib/mockData';
 
 export function BlogsPage() {
   const navigate = useNavigate();
@@ -55,7 +56,6 @@ export function BlogsPage() {
       deleted: 'Blog deleted successfully',
     },
   });
-
   // Apply filters when search or filter values change
   useEffect(() => {
     const filters: any = {

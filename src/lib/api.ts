@@ -23,7 +23,7 @@ class ApiClient {
   constructor() {
     this.instance = axios.create({
       baseURL: API_BASE_URL,
-      timeout: 30000,
+      timeout: 10000, // Reduced from 30s to 10s to fail faster when backend is down
       headers: {
         'Content-Type': 'application/json',
       },
@@ -51,28 +51,50 @@ class ApiClient {
       async (error: AxiosError) => {
         const originalRequest = error.config as any;
 
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        // Only attempt refresh on 401 errors for actual requests (not refreshing the token itself)
+        if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes('/auth/refresh')) {
           originalRequest._retry = true;
 
           try {
             const refreshToken = localStorage.getItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN);
             if (refreshToken) {
-              const response = await MockAuthService.refreshToken();
+              // Try to refresh token from backend
+              try {
+                const response = await this.post('/auth/refresh', { refreshToken });
 
-              if (response.success) {
-                const { accessToken, refreshToken } = response.data;
-                localStorage.setItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN, accessToken);
-                if (refreshToken) {
-                  localStorage.setItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+                if (response.success && response.data?.accessToken) {
+                  const newAccessToken = response.data.accessToken;
+                  const newRefreshToken = response.data.refreshToken || refreshToken;
+                  
+                  localStorage.setItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN, newAccessToken);
+                  localStorage.setItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN, newRefreshToken);
+
+                  originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+                  return this.instance(originalRequest);
+                } else {
+                  throw new Error('Token refresh failed');
                 }
+              } catch (backendRefreshError) {
+                // If backend refresh fails, still try the mock approach as fallback
+                const mockResponse = await MockAuthService.refreshToken();
+                if (mockResponse.success && mockResponse.data?.accessToken) {
+                  const { accessToken, refreshToken: newRefreshToken } = mockResponse.data;
+                  localStorage.setItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN, accessToken);
+                  if (newRefreshToken) {
+                    localStorage.setItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN, newRefreshToken);
+                  }
 
-                originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-                return this.instance(originalRequest);
-              } else {
-                throw new Error('Token refresh failed');
+                  originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+                  return this.instance(originalRequest);
+                }
+                throw backendRefreshError;
               }
+            } else {
+              // No refresh token available
+              throw new Error('No refresh token available');
             }
           } catch (refreshError) {
+            console.warn('Token refresh failed, clearing auth:', refreshError);
             this.clearAuth();
             window.location.href = '/login';
             return Promise.reject(refreshError);
@@ -991,6 +1013,114 @@ class ApiClient {
     // DELETE /api/v1/social-links/:id - Delete social media link (Admin only)
     delete: async (id: string) => {
       return this.delete(`/social-links/${id}`);
+    },
+  };
+
+  // Course management
+  // GET /api/v1/courses - List courses with pagination
+  // POST /api/v1/courses - Create new course (Admin/Provider)
+  // PUT /api/v1/courses/:id - Update course (Admin/Provider)
+  // DELETE /api/v1/courses/:id - Delete course (Admin/Provider)
+  courses = {
+    // GET /api/v1/courses - List all courses with pagination and filters
+    // Query params: page, limit, categoryId, level, status, providerId, search
+    list: async (params?: any) => {
+      return this.getPaginated('/courses', params);
+    },
+
+    // GET /api/v1/courses/:id - Get single course by ID
+    get: async (id: string) => {
+      return this.get(`/courses/${id}`);
+    },
+
+    // POST /api/v1/courses - Create new course
+    // Body: { title, description, categoryIds[], level, duration, maxParticipants, price, currency, instructor?, syllabus?, requirements?, certificationProvided?, certificationName?, featured? }
+    create: async (data: any) => {
+      return this.post('/courses', data);
+    },
+
+    // PUT /api/v1/courses/:id - Update course
+    // Body: { title?, description?, level?, duration?, maxParticipants?, price?, ...etc }
+    update: async (id: string, data: any) => {
+      return this.put(`/courses/${id}`, data);
+    },
+
+    // DELETE /api/v1/courses/:id - Delete course
+    delete: async (id: string) => {
+      return this.delete(`/courses/${id}`);
+    },
+
+    // GET /api/v1/courses/featured - Get featured courses
+    getFeatured: async (params?: any) => {
+      return this.get('/courses/featured', params);
+    },
+
+    // GET /api/v1/courses/stats - Get course statistics
+    getStats: async () => {
+      return this.get('/courses/stats');
+    },
+  };
+
+  // Course Availability management
+  // GET /api/v1/courses/:courseId/availability - List availability slots for a course
+  // POST /api/v1/courses/:courseId/availability - Create new availability slot
+  // PUT /api/v1/courses/:courseId/availability/:id - Update availability slot
+  // DELETE /api/v1/courses/:courseId/availability/:id - Delete availability slot
+  courseAvailability = {
+    // GET /api/v1/courses/:courseId/availability - List availability slots
+    // Query params: page, limit, status
+    list: async (courseId: string, params?: any) => {
+      return this.getPaginated(`/courses/${courseId}/availability`, params);
+    },
+
+    // GET /api/v1/courses/:courseId/availability/:availabilityId
+    get: async (courseId: string, availabilityId: string) => {
+      return this.get(`/courses/${courseId}/availability/${availabilityId}`);
+    },
+
+    // POST /api/v1/courses/:courseId/availability - Create new availability slot
+    // Body: { startDate, endDate, startTime, endTime, daysOfWeek[], location?, isOnline, spotsAvailable, notes? }
+    create: async (courseId: string, data: any) => {
+      return this.post(`/courses/${courseId}/availability`, data);
+    },
+
+    // PUT /api/v1/courses/:courseId/availability/:availabilityId - Update availability slot
+    update: async (courseId: string, availabilityId: string, data: any) => {
+      return this.put(`/courses/${courseId}/availability/${availabilityId}`, data);
+    },
+
+    // DELETE /api/v1/courses/:courseId/availability/:availabilityId
+    delete: async (courseId: string, availabilityId: string) => {
+      return this.delete(`/courses/${courseId}/availability/${availabilityId}`);
+    },
+  };
+
+  // Course Bookings management
+  // GET /api/v1/courses/:courseId/bookings - List bookings for a course
+  // POST /api/v1/courses/:courseId/bookings - Create new booking (Customer)
+  // PATCH /api/v1/courses/:courseId/bookings/:id/status - Update booking status (Admin)
+  courseBookings = {
+    // GET /api/v1/courses/:courseId/bookings - List bookings
+    // Query params: page, limit, status
+    list: async (courseId: string, params?: any) => {
+      return this.getPaginated(`/courses/${courseId}/bookings`, params);
+    },
+
+    // POST /api/v1/courses/:courseId/bookings - Create booking
+    // Body: { availabilityId, participantName, participantEmail, participantPhone?, notes? }
+    create: async (courseId: string, data: any) => {
+      return this.post(`/courses/${courseId}/bookings`, data);
+    },
+
+    // PATCH /api/v1/courses/:courseId/bookings/:id/status - Update booking status
+    // Body: { status }
+    updateStatus: async (courseId: string, bookingId: string, data: { status: string }) => {
+      return this.patch(`/courses/${courseId}/bookings/${bookingId}/status`, data);
+    },
+
+    // GET /api/v1/courses/:courseId/bookings/stats - Get booking statistics
+    getStats: async (courseId: string) => {
+      return this.get(`/courses/${courseId}/bookings/stats`);
     },
   };
 }
