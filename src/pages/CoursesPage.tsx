@@ -61,8 +61,14 @@ export function CoursesPage() {
     },
   });
 
-  // Handle paginated response: coursesData.data contains { data: [...], pagination: {...} }
-  let courses = (coursesData?.data?.data || []) as CoursesListItem[];
+  // Handle both direct array and PaginatedResponse structure
+  // Backend returns: { success: true, data: { data: [...], pagination: {...} } }
+  let courses: CoursesListItem[] = [];
+  if (Array.isArray(coursesData?.data)) {
+    courses = coursesData.data as CoursesListItem[];
+  } else if (coursesData?.data && typeof coursesData.data === 'object' && Array.isArray((coursesData.data as any).data)) {
+    courses = (coursesData.data as any).data as CoursesListItem[];
+  }
   
   const stats = statsData?.data || { total: 0, active: 0, inactive: 0, featured: 0 };
 
