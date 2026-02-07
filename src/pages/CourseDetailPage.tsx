@@ -258,12 +258,12 @@ export function CourseDetailPage() {
             <div className="text-center">
               <DollarSign className="w-8 h-8 mx-auto text-purple-600 mb-2" />
               <div className="text-2xl font-bold">
-                {typeof course.price === 'object' 
-                  ? (course.price.type === 'free' ? 'Free' : `${course.price.amount} ${course.price.currency}`)
-                  : course.price}
+                {typeof course.price === 'object' && course.price !== null
+                  ? (course.price.type === 'free' ? 'Free' : `${course.price.amount || 0} ${course.price.currency || 'USD'}`)
+                  : (typeof course.price === 'number' ? `${course.price}` : 'N/A')}
               </div>
               <p className="text-gray-600 text-sm">
-                {typeof course.price === 'object' ? course.price.currency : course.currency}
+                {typeof course.price === 'object' && course.price !== null ? (course.price.currency || 'USD') : (course.currency || 'USD')}
               </p>
             </div>
           </CardContent>
@@ -326,23 +326,23 @@ export function CourseDetailPage() {
               <CardTitle>Instructor</CardTitle>
             </CardHeader>
             <CardContent>
-              {typeof course.instructor === 'object' ? (
+              {typeof course.instructor === 'object' && course.instructor !== null ? (
                 <div>
-                  <p className="text-gray-900 font-semibold">{course.instructor.name}</p>
+                  <p className="text-gray-900 font-semibold">{course.instructor.name || 'Unknown Instructor'}</p>
                   {course.instructor.bio && <p className="text-gray-700 mt-2">{course.instructor.bio}</p>}
-                  {course.instructor.credentials && course.instructor.credentials.length > 0 && (
+                  {Array.isArray(course.instructor.credentials) && course.instructor.credentials.length > 0 && (
                     <div className="mt-2">
                       <p className="text-sm font-medium text-gray-600">Credentials:</p>
                       <ul className="list-disc list-inside text-sm text-gray-700">
                         {course.instructor.credentials.map((cred: string, idx: number) => (
-                          <li key={idx}>{cred}</li>
+                          <li key={idx}>{String(cred)}</li>
                         ))}
                       </ul>
                     </div>
                   )}
                 </div>
               ) : (
-                <p className="text-gray-700">{course.instructor}</p>
+                <p className="text-gray-700">{String(course.instructor || 'Unknown Instructor')}</p>
               )}
             </CardContent>
           </Card>
@@ -363,18 +363,18 @@ export function CourseDetailPage() {
                     <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                     {typeof item === 'object' && item !== null ? (
                       <div className="flex-1">
-                        <div className="font-semibold">{item.module}</div>
-                        {item.topics && item.topics.length > 0 && (
+                        <div className="font-semibold">{(item as any).module || 'Module'}</div>
+                        {Array.isArray((item as any).topics) && (item as any).topics.length > 0 && (
                           <ul className="ml-4 mt-1 space-y-1">
-                            {item.topics.map((topic: string, tidx: number) => (
-                              <li key={tidx} className="text-sm text-gray-600">• {topic}</li>
+                            {(item as any).topics.map((topic: any, tidx: number) => (
+                              <li key={tidx} className="text-sm text-gray-600">• {String(topic)}</li>
                             ))}
                           </ul>
                         )}
-                        {item.duration && <div className="text-sm text-gray-500 mt-1">{item.duration}</div>}
+                        {(item as any).duration && <div className="text-sm text-gray-500 mt-1">{String((item as any).duration)}</div>}
                       </div>
                     ) : (
-                      <span>{item}</span>
+                      <span>{String(item)}</span>
                     )}
                   </li>
                 ))}

@@ -12,7 +12,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 
 import api from '../lib/api';
-import { MOCK_COURSES, MOCK_COURSE_STATS } from '../lib/mockData';
 import { Course } from '../types';
 
 interface CoursesListItem extends Course {
@@ -26,16 +25,10 @@ export function CoursesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [levelFilter, setLevelFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [useMockData, setUseMockData] = useState(false);
 
-  const { data: coursesData, isLoading, error: coursesError } = useQuery({
+  const { data: coursesData, isLoading, error: coursesError, refetch: refetchCourses } = useQuery({
     queryKey: ['courses', levelFilter, statusFilter, searchQuery],
     queryFn: async () => {
-      if (useMockData) {
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 300));
-        return { data: MOCK_COURSES, pagination: { page: 1, limit: 100, total: MOCK_COURSES.length, totalPages: 1, hasNext: false, hasPrev: false } };
-      }
       const params: any = { page: 1, limit: 100 };
       if (levelFilter !== 'all') params.level = levelFilter;
       if (statusFilter !== 'all') params.status = statusFilter;
@@ -49,9 +42,6 @@ export function CoursesPage() {
   const { data: statsData, error: statsError } = useQuery({
     queryKey: ['courses-stats'],
     queryFn: async () => {
-      if (useMockData) {
-        return { data: MOCK_COURSE_STATS };
-      }
       const response = await api.courses.getStats();
       return response;
     },
@@ -72,17 +62,6 @@ export function CoursesPage() {
   });
 
   let courses = (coursesData?.data || []) as CoursesListItem[];
-  
-  // Apply client-side filtering for mock data
-  if (useMockData) {
-    courses = courses.filter(course => {
-      if (levelFilter !== 'all' && course.level !== levelFilter) return false;
-      if (statusFilter !== 'all' && course.status !== statusFilter) return false;
-      if (searchQuery && !course.title.toLowerCase().includes(searchQuery.toLowerCase()) && 
-          !course.description?.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-      return true;
-    });
-  }
   
   const stats = statsData?.data || { total: 0, active: 0, inactive: 0, featured: 0 };
 
@@ -111,70 +90,71 @@ export function CoursesPage() {
   };
 
   const formatDuration = (duration: any) => {
-    if (typeof duration === 'object' && duration !== null && duration.value !== undefined) {
-      return `${duration.value} ${duration.unit || 'weeks'}`;
+    try {
+      if (typeof duration === 'object' && duration !== null) {
+        if (duration.value !== undefined) {
+          return `${duration.value} ${duration.unit || 'weeks'}`;
+        }
+        return 'N/A';
+      }
+      if (typeof duration === 'number') {
+        return `${duration}h`;
+      }
+      return String(duration) || 'N/A';
+    } catch (e) {
+      console.error('Error formatting duration:', duration, e);
+      return 'N/A';
     }
-    return `${duration || 0}h`;
   };
 
   const formatPrice = (price: any, currency?: string) => {
-    if (typeof price === 'object' && price !== null && price.amount !== undefined) {
-      return `${price.currency || 'USD'} ${price.amount}`;
+    try {
+      if (typeof price === 'object' && price !== null) {
+        if (price.amount !== undefined) {
+          const currencyCode = price.currency || currency || 'USD';
+          return `${currencyCode} ${price.amount}`;
+        }
+        return 'N/A';
+      }
+      if (typeof price === 'number') {
+        const currencyCode = currency || 'USD';
+        return `${currencyCode} ${price}`;
+      }
+      return String(price) || 'N/A';
+    } catch (e) {
+      console.error('Error formatting price:', price, e);
+      return 'N/A';
     }
-    if (typeof price === 'number') {
-      return `${currency || 'USD'} ${price}`;
-    }
-    return 'N/A';
   };
 
   return (
     <div className="space-y-6">
       {/* Error Messages */}
-      {(coursesError || statsError) && !useMockData && (
+      {(coursesError || statsError) && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
           <div className="flex-1">
             <h3 className="font-semibold text-red-900">Unable to load courses</h3>
             <p className="text-red-800 text-sm mt-1">
-              The backend API is not responding. Please ensure the server is running on http://localhost:3000/api/v1
+              {coursesError ? (
+                <>Connected to backend but received error. Please check the server is responding correctly.</>
+              ) : statsError ? (
+                <>Could not load course statistics. The backend API may not be accessible.</>
+              ) : (
+                <>The backend API is not responding. Please ensure the server is running on http://localhost:3000</>
+              )}
             </p>
             <div className="flex gap-2 mt-3">
               <Button 
                 size="sm" 
                 variant="outline"
-                onClick={() => queryClient.refetchQueries({ queryKey: ['courses'] })}
+                onClick={() => refetchCourses()}
                 className="border-red-300 hover:bg-red-100"
               >
                 Retry
               </Button>
-              <Button 
-                size="sm" 
-                variant="outline"
-                onClick={() => setUseMockData(!useMockData)}
-                className="border-blue-300 hover:bg-blue-100"
-              >
-                {useMockData ? 'Use Live API' : 'Use Demo Data'}
-              </Button>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Demo Mode Banner */}
-      {useMockData && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
-          <div className="flex-1">
-            <h3 className="font-semibold text-blue-900">Using Demo Data</h3>
-            <p className="text-blue-800 text-sm">Showing mock data for demonstration. Backend API not connected.</p>
-          </div>
-          <Button 
-            size="sm" 
-            variant="ghost"
-            onClick={() => setUseMockData(false)}
-          >
-            ×
-          </Button>
         </div>
       )}
 

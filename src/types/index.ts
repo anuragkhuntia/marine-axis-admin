@@ -413,7 +413,7 @@ export interface CreateCourseForm {
   title: string;
   description: string;
   categoryIds: string[];
-  level: 'beginner' | 'intermediate' | 'advanced';
+  level: 'beginner' | 'intermediate' | 'advanced' | 'certificate' | 'diploma' | 'degree';
   duration: number;
   maxParticipants: number;
   price: number;

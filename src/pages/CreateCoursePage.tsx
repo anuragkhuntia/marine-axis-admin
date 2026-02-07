@@ -61,7 +61,16 @@ export function CreateCoursePage() {
       setLoadingCategories(true);
       try {
         const response = await api.categories.list();
-        setCategories(response.data || []);
+        // Handle different response structures
+        let cats: Category[] = [];
+        if (Array.isArray(response.data)) {
+          cats = response.data;
+        } else if (response.data?.data && Array.isArray(response.data.data)) {
+          cats = response.data.data;
+        } else if (response.data?.items && Array.isArray(response.data.items)) {
+          cats = response.data.items;
+        }
+        setCategories(cats);
       } catch (error) {
         console.error('Failed to load categories:', error);
         toast({ title: 'Error', description: 'Failed to load categories', variant: 'destructive' });
@@ -80,10 +89,25 @@ export function CreateCoursePage() {
         try {
           const response = await api.courses.get(id);
           const course = response.data as Course;
-          setFormData({
+          
+          // Flatten nested objects for form compatibility
+          const flattenedData: CourseFormData = {
             ...course,
+            // Handle price: object or number
+            price: typeof course.price === 'object' ? course.price.amount : course.price,
+            currency: typeof course.price === 'object' ? course.price.currency : course.currency,
+            // Handle duration: object or number
+            duration: typeof course.duration === 'object' ? course.duration.value : course.duration,
+            // Handle instructor: object or string
+            instructor: typeof course.instructor === 'object' ? course.instructor.name : course.instructor,
+            // Handle syllabus: ensure it's string array
+            syllabus: Array.isArray(course.syllabus) 
+              ? course.syllabus.map(item => typeof item === 'string' ? item : item.module || '')
+              : [],
             images: course.images || [],
-          });
+          };
+          
+          setFormData(flattenedData);
         } catch (error) {
           console.error('Failed to load course:', error);
           toast({ title: 'Error', description: 'Failed to load course', variant: 'destructive' });
