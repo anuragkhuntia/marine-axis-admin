@@ -61,7 +61,8 @@ export function CoursesPage() {
     },
   });
 
-  let courses = (coursesData?.data || []) as CoursesListItem[];
+  // Handle paginated response: coursesData.data contains { data: [...], pagination: {...} }
+  let courses = (coursesData?.data?.data || []) as CoursesListItem[];
   
   const stats = statsData?.data || { total: 0, active: 0, inactive: 0, featured: 0 };
 
