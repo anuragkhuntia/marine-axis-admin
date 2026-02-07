@@ -235,7 +235,9 @@ export function CourseDetailPage() {
           <CardContent className="pt-6">
             <div className="text-center">
               <Clock className="w-8 h-8 mx-auto text-blue-600 mb-2" />
-              <div className="text-2xl font-bold">{course.duration}h</div>
+              <div className="text-2xl font-bold">
+                {typeof course.duration === 'object' ? `${course.duration.value} ${course.duration.unit}` : `${course.duration}h`}
+              </div>
               <p className="text-gray-600 text-sm">Duration</p>
             </div>
           </CardContent>
@@ -255,8 +257,14 @@ export function CourseDetailPage() {
           <CardContent className="pt-6">
             <div className="text-center">
               <DollarSign className="w-8 h-8 mx-auto text-purple-600 mb-2" />
-              <div className="text-2xl font-bold">{course.price}</div>
-              <p className="text-gray-600 text-sm">{course.currency}</p>
+              <div className="text-2xl font-bold">
+                {typeof course.price === 'object' 
+                  ? (course.price.type === 'free' ? 'Free' : `${course.price.amount} ${course.price.currency}`)
+                  : course.price}
+              </div>
+              <p className="text-gray-600 text-sm">
+                {typeof course.price === 'object' ? course.price.currency : course.currency}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -318,7 +326,24 @@ export function CourseDetailPage() {
               <CardTitle>Instructor</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-700">{course.instructor}</p>
+              {typeof course.instructor === 'object' ? (
+                <div>
+                  <p className="text-gray-900 font-semibold">{course.instructor.name}</p>
+                  {course.instructor.bio && <p className="text-gray-700 mt-2">{course.instructor.bio}</p>}
+                  {course.instructor.credentials && course.instructor.credentials.length > 0 && (
+                    <div className="mt-2">
+                      <p className="text-sm font-medium text-gray-600">Credentials:</p>
+                      <ul className="list-disc list-inside text-sm text-gray-700">
+                        {course.instructor.credentials.map((cred: string, idx: number) => (
+                          <li key={idx}>{cred}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-gray-700">{course.instructor}</p>
+              )}
             </CardContent>
           </Card>
         )}
@@ -336,7 +361,21 @@ export function CourseDetailPage() {
                 {course.syllabus.map((item, idx) => (
                   <li key={idx} className="flex items-start gap-2">
                     <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                    <span>{item}</span>
+                    {typeof item === 'object' && item !== null ? (
+                      <div className="flex-1">
+                        <div className="font-semibold">{item.module}</div>
+                        {item.topics && item.topics.length > 0 && (
+                          <ul className="ml-4 mt-1 space-y-1">
+                            {item.topics.map((topic: string, tidx: number) => (
+                              <li key={tidx} className="text-sm text-gray-600">• {topic}</li>
+                            ))}
+                          </ul>
+                        )}
+                        {item.duration && <div className="text-sm text-gray-500 mt-1">{item.duration}</div>}
+                      </div>
+                    ) : (
+                      <span>{item}</span>
+                    )}
                   </li>
                 ))}
               </ul>

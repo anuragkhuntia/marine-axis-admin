@@ -247,22 +247,28 @@ export interface Course {
   provider?: Provider;
   categoryIds: string[];
   categories?: Category[];
-  level: 'beginner' | 'intermediate' | 'advanced';
-  duration: number; // in hours
+  level: 'beginner' | 'intermediate' | 'advanced' | 'certificate' | 'diploma' | 'degree';
+  duration: number | { value: number; unit: 'weeks' | 'months' | 'years' }; // Can be number (hours) or object with value and unit
   maxParticipants: number;
-  price: number;
-  currency: string;
-  instructor?: string;
-  syllabus?: string[];
+  price: number | { amount: number; currency: string; type: 'free' | 'paid' | 'subscription' }; // Can be number or object
+  currency?: string; // For backward compatibility when price is a number
+  instructor?: string | { name: string; bio?: string; photo?: string; email?: string; credentials?: string[] }; // Can be string or object
+  syllabus?: string[] | Array<{ module: string; topics: string[]; duration?: string; order?: number }>;
   requirements?: string[];
+  learningOutcomes?: string[];
   certificationProvided: boolean;
   certificationName?: string;
   featured: boolean;
-  status: 'active' | 'inactive' | 'archived';
+  status: 'active' | 'inactive' | 'archived' | 'draft' | 'published';
   images: string[];
   enrollments: number;
+  enrollmentCount?: number; // Alias
   rating: number;
   reviews: number;
+  reviewCount?: number; // Alias
+  tags?: string[];
+  slug?: string;
+  code?: string;
   createdAt: string;
   updatedAt: string;
 }

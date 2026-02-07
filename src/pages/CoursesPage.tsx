@@ -110,6 +110,23 @@ export function CoursesPage() {
     return variants[status] || 'outline';
   };
 
+  const formatDuration = (duration: any) => {
+    if (typeof duration === 'object' && duration !== null && duration.value !== undefined) {
+      return `${duration.value} ${duration.unit || 'weeks'}`;
+    }
+    return `${duration || 0}h`;
+  };
+
+  const formatPrice = (price: any, currency?: string) => {
+    if (typeof price === 'object' && price !== null && price.amount !== undefined) {
+      return `${price.currency || 'USD'} ${price.amount}`;
+    }
+    if (typeof price === 'number') {
+      return `${currency || 'USD'} ${price}`;
+    }
+    return 'N/A';
+  };
+
   return (
     <div className="space-y-6">
       {/* Error Messages */}
@@ -310,17 +327,13 @@ export function CoursesPage() {
                       <TableCell>
                         <div className="flex items-center gap-1">
                           <Clock className="w-4 h-4 text-gray-500" />
-                          {typeof course.duration === 'object' && course.duration?.value 
-                            ? `${course.duration.value} ${course.duration.unit}` 
-                            : `${course.duration}h`}
+                          {formatDuration(course.duration)}
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
                           <DollarSign className="w-4 h-4 text-gray-500" />
-                          {typeof course.price === 'object' && course.price?.amount 
-                            ? `${course.price.currency} ${course.price.amount}` 
-                            : course.price}
+                          {formatPrice(course.price, course.currency)}
                         </div>
                       </TableCell>
                       <TableCell>
