@@ -70,6 +70,11 @@ export function CoursesPage() {
     courses = (coursesData.data as any).data as CoursesListItem[];
   }
   
+  // Debug: log courses to verify IDs exist
+  if (courses.length > 0) {
+    console.log('Courses loaded:', courses.length, courses.map(c => ({ id: c.id, title: c.title })));
+  }
+  
   const stats = statsData?.data || { total: 0, active: 0, inactive: 0, featured: 0 };
 
   const handleDelete = (id: string) => {
@@ -293,8 +298,8 @@ export function CoursesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {courses.map((course) => (
-                    <TableRow key={course.id}>
+                  {courses.map((course, index) => (
+                    <TableRow key={course?.id || `course-${index}`}>
                       <TableCell>
                         <div>
                           <div className="font-medium">{course.title}</div>
