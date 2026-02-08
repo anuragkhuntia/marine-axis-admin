@@ -61,6 +61,46 @@ export function CoursesPage() {
     },
   });
 
+  const publishMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await api.courses.publish(id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
+      toast({ title: 'Course published', description: 'Course is now active and visible' });
+    },
+    onError: () => {
+      toast({ title: 'Error', description: 'Failed to publish course', variant: 'destructive' });
+    },
+  });
+
+  const unpublishMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await api.courses.unpublish(id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
+      toast({ title: 'Course unpublished', description: 'Course is now inactive' });
+    },
+    onError: () => {
+      toast({ title: 'Error', description: 'Failed to unpublish course', variant: 'destructive' });
+    },
+  });
+
+  const setFeaturedMutation = useMutation({
+    mutationFn: async ({ id, featured }: { id: string; featured: boolean }) => {
+      return await api.courses.setFeatured(id, featured);
+    },
+    onSuccess: (_, { featured }) => {
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
+      const message = featured ? 'marked as featured' : 'removed from featured';
+      toast({ title: 'Course updated', description: `Course ${message}` });
+    },
+    onError: () => {
+      toast({ title: 'Error', description: 'Failed to update course', variant: 'destructive' });
+    },
+  });
+
   // Handle both direct array and PaginatedResponse structure
   // Backend returns: { success: true, data: { data: [...], pagination: {...} } }
   let courses: CoursesListItem[] = [];
@@ -81,6 +121,18 @@ export function CoursesPage() {
     if (window.confirm('Are you sure you want to delete this course?')) {
       deleteMutation.mutate(id);
     }
+  };
+
+  const handlePublish = (id: string) => {
+    publishMutation.mutate(id);
+  };
+
+  const handleUnpublish = (id: string) => {
+    unpublishMutation.mutate(id);
+  };
+
+  const handleToggleFeatured = (id: string, currentFeatured: boolean) => {
+    setFeaturedMutation.mutate({ id, featured: !currentFeatured });
   };
 
   const getLevelBadge = (level: string) => {
@@ -340,7 +392,7 @@ export function CoursesPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex gap-2 justify-center">
+                        <div className="flex gap-1 justify-center flex-wrap">
                           <Button
                             variant="ghost"
                             size="sm"
@@ -357,6 +409,39 @@ export function CoursesPage() {
                           >
                             <Edit className="w-4 h-4" />
                           </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleToggleFeatured(course.id, course.featured || false)}
+                            title={course.featured ? 'Remove from featured' : 'Mark as featured'}
+                            disabled={setFeaturedMutation.isPending}
+                            className={course.featured ? 'text-yellow-500' : 'text-gray-500'}
+                          >
+                            <Star className="w-4 h-4" fill={course.featured ? 'currentColor' : 'none'} />
+                          </Button>
+                          {course.status === 'inactive' ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handlePublish(course.id)}
+                              title="Publish course"
+                              disabled={publishMutation.isPending}
+                              className="text-green-600"
+                            >
+                              Publish
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleUnpublish(course.id)}
+                              title="Unpublish course"
+                              disabled={unpublishMutation.isPending}
+                              className="text-orange-600"
+                            >
+                              Unpublish
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="sm"

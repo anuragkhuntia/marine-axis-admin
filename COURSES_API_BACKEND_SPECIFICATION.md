@@ -30,6 +30,8 @@ GET /api/v1/courses/stats
 - [ ] `POST /api/v1/courses` - Create new course
 - [ ] `PUT /api/v1/courses/:id` - Update course
 - [ ] `DELETE /api/v1/courses/:id` - Delete course
+- [ ] `POST /api/v1/courses/:id/publish` - Publish course (set status to active)
+- [ ] `POST /api/v1/courses/:id/unpublish` - Unpublish course (set status to inactive)
 
 ### Phase 3: NICE-TO-HAVE (Later)
 - [ ] `GET /api/v1/courses/featured` - Featured courses
@@ -408,6 +410,134 @@ Authorization: Bearer <admin-token>
 
 ---
 
+### 7️⃣ POST /api/v1/courses/:id/publish - Publish Course
+
+**Request:**
+```
+POST /api/v1/courses/course-123/publish
+Authorization: Bearer <admin-token>
+Content-Type: application/json
+```
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "course-123",
+    "title": "Navigation Fundamentals",
+    "status": "active",
+    "updatedAt": "2026-02-08T10:30:00Z"
+  },
+  "message": "Course published successfully"
+}
+```
+
+**Implementation (Node.js/Express):**
+```javascript
+router.post('/courses/:id/publish', authenticate, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const course = await Course.findByIdAndUpdate(
+      id,
+      { status: 'active', updatedAt: new Date() },
+      { new: true }
+    );
+    
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        id: course._id,
+        title: course.title,
+        status: course.status,
+        updatedAt: course.updatedAt
+      },
+      message: 'Course published successfully'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to publish course',
+      error: error.message
+    });
+  }
+});
+```
+
+---
+
+### 8️⃣ POST /api/v1/courses/:id/unpublish - Unpublish Course
+
+**Request:**
+```
+POST /api/v1/courses/course-123/unpublish
+Authorization: Bearer <admin-token>
+Content-Type: application/json
+```
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "course-123",
+    "title": "Navigation Fundamentals",
+    "status": "inactive",
+    "updatedAt": "2026-02-08T10:30:00Z"
+  },
+  "message": "Course unpublished successfully"
+}
+```
+
+**Implementation (Node.js/Express):**
+```javascript
+router.post('/courses/:id/unpublish', authenticate, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const course = await Course.findByIdAndUpdate(
+      id,
+      { status: 'inactive', updatedAt: new Date() },
+      { new: true }
+    );
+    
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        id: course._id,
+        title: course.title,
+        status: course.status,
+        updatedAt: course.updatedAt
+      },
+      message: 'Course unpublished successfully'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to unpublish course',
+      error: error.message
+    });
+  }
+});
+```
+
+---
+
 ## 🗄️ Database Schema
 
 ### Courses Collection/Table
@@ -479,6 +609,9 @@ Frontend Testing:
 - [ ] Error messages are consistent
 - [ ] 401 returned for unauthenticated requests
 - [ ] Soft delete works (deletedAt set, not hard deleted)
+- [ ] POST /courses/:id/publish changes status to 'active'
+- [ ] POST /courses/:id/unpublish changes status to 'inactive'
+- [ ] Publish/unpublish return correct course data
 
 Admin Panel Testing:
 - [ ] Courses page loads without errors
@@ -488,6 +621,9 @@ Admin Panel Testing:
 - [ ] Can submit course form successfully
 - [ ] Updated courses appear in list
 - [ ] Search/filter works
+- [ ] Publish button toggles course status to active
+- [ ] Unpublish button toggles course status to inactive
+- [ ] Edit course functionality works
 ```
 
 ---
@@ -510,9 +646,9 @@ The frontend is ready to handle these endpoints:
 ## 🚀 Estimated Implementation Time
 
 | Phase | Endpoints | Est. Time |
-|-------|-----------|-----------|
+|-------|-----------|----------|
 | Phase 1 (CRITICAL) | GET /courses, GET /courses/stats | 2-3 hours |
-| Phase 2 (IMPORTANT) | GET/:id, POST, PUT/:id, DELETE | 3-4 hours |
+| Phase 2 (IMPORTANT) | GET/:id, POST, PUT/:id, DELETE, POST/:id/publish, POST/:id/unpublish | 4-5 hours |
 | Phase 3 (NICE-TO-HAVE) | Featured, availability, bookings | 4-6 hours |
 
 **Total**: ~7-13 hours for full implementation

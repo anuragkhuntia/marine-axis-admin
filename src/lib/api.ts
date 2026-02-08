@@ -1059,6 +1059,21 @@ class ApiClient {
     getStats: async () => {
       return this.get('/courses/stats');
     },
+
+    // POST /api/v1/courses/:id/publish - Publish course (set status to 'active')
+    publish: async (id: string) => {
+      return this.post(`/courses/${id}/publish`, {});
+    },
+
+    // POST /api/v1/courses/:id/unpublish - Unpublish course (set status to 'inactive')
+    unpublish: async (id: string) => {
+      return this.post(`/courses/${id}/unpublish`, {});
+    },
+
+    // PUT /api/v1/courses/:id/featured - Mark/unmark course as featured
+    setFeatured: async (id: string, featured: boolean) => {
+      return this.put(`/courses/${id}`, { featured });
+    },
   };
 
   // Course Availability management
