@@ -39,6 +39,7 @@ export function CoursesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [levelFilter, setLevelFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [pendingToggle, setPendingToggle] = useState<string | null>(null); // Track toggle in progress
 
   const { data: coursesData, isLoading, error: coursesError, refetch: refetchCourses } = useQuery({
     queryKey: ['courses', levelFilter, statusFilter, searchQuery],
@@ -81,9 +82,12 @@ export function CoursesPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['courses'] });
+      refetchCourses(); // Force immediate refetch
+      setPendingToggle(null);
       toast({ title: 'Course published', description: 'Course is now active and visible' });
     },
     onError: () => {
+      setPendingToggle(null);
       toast({ title: 'Error', description: 'Failed to publish course', variant: 'destructive' });
     },
   });
@@ -94,9 +98,12 @@ export function CoursesPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['courses'] });
+      refetchCourses(); // Force immediate refetch
+      setPendingToggle(null);
       toast({ title: 'Course unpublished', description: 'Course is now inactive' });
     },
     onError: () => {
+      setPendingToggle(null);
       toast({ title: 'Error', description: 'Failed to unpublish course', variant: 'destructive' });
     },
   });
@@ -105,10 +112,10 @@ export function CoursesPage() {
     mutationFn: async ({ id, featured }: { id: string; featured: boolean }) => {
       return await api.courses.setFeatured(id, featured);
     },
-    onSuccess: (_, { featured }) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['courses'] });
-      const message = featured ? 'marked as featured' : 'removed from featured';
-      toast({ title: 'Course updated', description: `Course ${message}` });
+      refetchCourses(); // Force immediate refetch
+      toast({ title: 'Course updated', description: `Course ${setFeaturedMutation.variables?.featured ? 'marked as featured' : 'removed from featured'}` });
     },
     onError: () => {
       toast({ title: 'Error', description: 'Failed to update course', variant: 'destructive' });
@@ -138,11 +145,22 @@ export function CoursesPage() {
   };
 
   const handlePublish = (id: string) => {
+    setPendingToggle(id);
     publishMutation.mutate(id);
   };
 
   const handleUnpublish = (id: string) => {
+    setPendingToggle(id);
     unpublishMutation.mutate(id);
+  };
+
+  const handleTogglePublish = (id: string, currentStatus: string) => {
+    setPendingToggle(id);
+    if (currentStatus === 'inactive') {
+      publishMutation.mutate(id);
+    } else {
+      unpublishMutation.mutate(id);
+    }
   };
 
   const handleToggleFeatured = (id: string, currentFeatured: boolean) => {
@@ -437,23 +455,23 @@ export function CoursesPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handlePublish(course.id)}
+                              onClick={() => handleTogglePublish(course.id, course.status)}
                               title="Publish course"
-                              disabled={publishMutation.isPending}
-                              className="text-green-600"
+                              disabled={pendingToggle === course.id || publishMutation.isPending}
+                              className={pendingToggle === course.id ? 'text-yellow-500' : 'text-green-600'}
                             >
-                              Publish
+                              {pendingToggle === course.id ? 'Publishing...' : 'Publish'}
                             </Button>
                           ) : (
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleUnpublish(course.id)}
+                              onClick={() => handleTogglePublish(course.id, course.status)}
                               title="Unpublish course"
-                              disabled={unpublishMutation.isPending}
-                              className="text-orange-600"
+                              disabled={pendingToggle === course.id || unpublishMutation.isPending}
+                              className={pendingToggle === course.id ? 'text-yellow-500' : 'text-orange-600'}
                             >
-                              Unpublish
+                              {pendingToggle === course.id ? 'Unpublishing...' : 'Unpublish'}
                             </Button>
                           )}
                           <Button
