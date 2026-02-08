@@ -26,6 +26,20 @@ interface CourseFormData extends CreateCourseForm {
   images: string[];
 }
 
+// Normalize course data to handle MongoDB _id field
+const normalizeCourse = (course: any, index?: number): Course => {
+  // Ensure id field is set (handle both id and _id from backend)
+  if (!course.id && course._id) {
+    course.id = course._id;
+  }
+  // Fallback: use generated ID if no ID exists (shouldn't happen with real data)
+  if (!course.id) {
+    course.id = `course-${index || Math.random().toString(36).substr(2, 9)}`;
+    console.warn('Course missing ID, using generated ID:', course.id, course);
+  }
+  return course as Course;
+};
+
 export function CreateCoursePage() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -88,7 +102,7 @@ export function CreateCoursePage() {
         setLoading(true);
         try {
           const response = await api.courses.get(id);
-          const course = response.data as Course;
+          const course = normalizeCourse(response.data, 0);
           
           // Flatten nested objects for form compatibility
           const flattenedData: CourseFormData = {

@@ -19,6 +19,20 @@ import { Course, CourseAvailability } from '../types';
 
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
+// Normalize course data to handle MongoDB _id field
+const normalizeCourse = (course: any, index?: number): Course => {
+  // Ensure id field is set (handle both id and _id from backend)
+  if (!course.id && course._id) {
+    course.id = course._id;
+  }
+  // Fallback: use generated ID if no ID exists (shouldn't happen with real data)
+  if (!course.id) {
+    course.id = `course-${index || Math.random().toString(36).substr(2, 9)}`;
+    console.warn('Course missing ID, using generated ID:', course.id, course);
+  }
+  return course as Course;
+};
+
 interface AvailabilityFormData {
   startDate: string;
   endDate: string;
@@ -64,7 +78,7 @@ export function CourseDetailPage() {
           api.courses.get(id),
           api.courseAvailability.list(id),
         ]);
-        setCourse(courseRes.data);
+        setCourse(normalizeCourse(courseRes.data));
         setAvailability((availRes as any).data as CourseAvailability[] || []);
       } catch (error) {
         console.error('Failed to load course:', error);

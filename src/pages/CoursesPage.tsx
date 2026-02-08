@@ -18,6 +18,20 @@ interface CoursesListItem extends Course {
   providerName?: string;
 }
 
+// Normalize course data to handle MongoDB _id field
+const normalizeCourse = (course: any, index?: number): CoursesListItem => {
+  // Ensure id field is set (handle both id and _id from backend)
+  if (!course.id && course._id) {
+    course.id = course._id;
+  }
+  // Fallback: use title hash if no ID exists (shouldn't happen with real data)
+  if (!course.id) {
+    course.id = `course-${index || Math.random().toString(36).substr(2, 9)}`;
+    console.warn('Course missing ID, using generated ID:', course.id, course);
+  }
+  return course as CoursesListItem;
+};
+
 export function CoursesPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -105,14 +119,14 @@ export function CoursesPage() {
   // Backend returns: { success: true, data: { data: [...], pagination: {...} } }
   let courses: CoursesListItem[] = [];
   if (Array.isArray(coursesData?.data)) {
-    courses = coursesData.data as CoursesListItem[];
+    courses = coursesData.data.map((c, i) => normalizeCourse(c, i));
   } else if (coursesData?.data && typeof coursesData.data === 'object' && Array.isArray((coursesData.data as any).data)) {
-    courses = (coursesData.data as any).data as CoursesListItem[];
+    courses = (coursesData.data as any).data.map((c, i) => normalizeCourse(c, i));
   }
   
   // Debug: log courses to verify IDs exist
   if (courses.length > 0) {
-    console.log('Courses loaded:', courses.length, courses.map(c => ({ id: c.id, title: c.title })));
+    console.log('Courses loaded:', courses.length, courses.map(c => ({ id: c.id, title: c.title, hasMissingId: !c.id })));
   }
   
   const stats = statsData?.data || { total: 0, active: 0, inactive: 0, featured: 0 };
