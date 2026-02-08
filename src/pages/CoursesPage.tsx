@@ -80,13 +80,46 @@ export function CoursesPage() {
     mutationFn: async (id: string) => {
       return await api.courses.publish(id);
     },
+    onMutate: async (id: string) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['courses'] });
+
+      // Snapshot the previous value
+      const previousData = queryClient.getQueryData(['courses', levelFilter, statusFilter, searchQuery]);
+
+      // Optimistically update to new value
+      queryClient.setQueryData(['courses', levelFilter, statusFilter, searchQuery], (old: any) => {
+        if (!old) return old;
+        let data = old;
+        if (data?.data?.data) {
+          data = {
+            ...data,
+            data: {
+              ...data.data,
+              data: data.data.data.map((c: any) => c.id === id ? { ...c, status: 'active' } : c),
+            },
+          };
+        } else if (Array.isArray(old?.data)) {
+          data = {
+            ...data,
+            data: old.data.map((c: any) => c.id === id ? { ...c, status: 'active' } : c),
+          };
+        }
+        return data;
+      });
+
+      return { previousData };
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['courses'] });
-      refetchCourses(); // Force immediate refetch
+      refetchCourses(); // Verify with server
       setPendingToggle(null);
       toast({ title: 'Course published', description: 'Course is now active and visible' });
     },
-    onError: () => {
+    onError: (err: any, id: string, context: any) => {
+      // Revert on error
+      if (context?.previousData) {
+        queryClient.setQueryData(['courses', levelFilter, statusFilter, searchQuery], context.previousData);
+      }
       setPendingToggle(null);
       toast({ title: 'Error', description: 'Failed to publish course', variant: 'destructive' });
     },
@@ -96,13 +129,46 @@ export function CoursesPage() {
     mutationFn: async (id: string) => {
       return await api.courses.unpublish(id);
     },
+    onMutate: async (id: string) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['courses'] });
+
+      // Snapshot the previous value
+      const previousData = queryClient.getQueryData(['courses', levelFilter, statusFilter, searchQuery]);
+
+      // Optimistically update to new value
+      queryClient.setQueryData(['courses', levelFilter, statusFilter, searchQuery], (old: any) => {
+        if (!old) return old;
+        let data = old;
+        if (data?.data?.data) {
+          data = {
+            ...data,
+            data: {
+              ...data.data,
+              data: data.data.data.map((c: any) => c.id === id ? { ...c, status: 'inactive' } : c),
+            },
+          };
+        } else if (Array.isArray(old?.data)) {
+          data = {
+            ...data,
+            data: old.data.map((c: any) => c.id === id ? { ...c, status: 'inactive' } : c),
+          };
+        }
+        return data;
+      });
+
+      return { previousData };
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['courses'] });
-      refetchCourses(); // Force immediate refetch
+      refetchCourses(); // Verify with server
       setPendingToggle(null);
       toast({ title: 'Course unpublished', description: 'Course is now inactive' });
     },
-    onError: () => {
+    onError: (err: any, id: string, context: any) => {
+      // Revert on error
+      if (context?.previousData) {
+        queryClient.setQueryData(['courses', levelFilter, statusFilter, searchQuery], context.previousData);
+      }
       setPendingToggle(null);
       toast({ title: 'Error', description: 'Failed to unpublish course', variant: 'destructive' });
     },
@@ -112,12 +178,46 @@ export function CoursesPage() {
     mutationFn: async ({ id, featured }: { id: string; featured: boolean }) => {
       return await api.courses.setFeatured(id, featured);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['courses'] });
-      refetchCourses(); // Force immediate refetch
-      toast({ title: 'Course updated', description: `Course ${setFeaturedMutation.variables?.featured ? 'marked as featured' : 'removed from featured'}` });
+    onMutate: async ({ id, featured }: { id: string; featured: boolean }) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['courses'] });
+
+      // Snapshot the previous value
+      const previousData = queryClient.getQueryData(['courses', levelFilter, statusFilter, searchQuery]);
+
+      // Optimistically update to new value
+      queryClient.setQueryData(['courses', levelFilter, statusFilter, searchQuery], (old: any) => {
+        if (!old) return old;
+        let data = old;
+        if (data?.data?.data) {
+          data = {
+            ...data,
+            data: {
+              ...data.data,
+              data: data.data.data.map((c: any) => c.id === id ? { ...c, featured } : c),
+            },
+          };
+        } else if (Array.isArray(old?.data)) {
+          data = {
+            ...data,
+            data: old.data.map((c: any) => c.id === id ? { ...c, featured } : c),
+          };
+        }
+        return data;
+      });
+
+      return { previousData };
     },
-    onError: () => {
+    onSuccess: (_, { featured }) => {
+      refetchCourses(); // Verify with server
+      const message = featured ? 'marked as featured' : 'removed from featured';
+      toast({ title: 'Course updated', description: `Course ${message}` });
+    },
+    onError: (err: any, variables: any, context: any) => {
+      // Revert on error
+      if (context?.previousData) {
+        queryClient.setQueryData(['courses', levelFilter, statusFilter, searchQuery], context.previousData);
+      }
       toast({ title: 'Error', description: 'Failed to update course', variant: 'destructive' });
     },
   });
