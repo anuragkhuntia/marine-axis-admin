@@ -40,6 +40,7 @@ export function CoursesPage() {
   const [levelFilter, setLevelFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [pendingToggle, setPendingToggle] = useState<string | null>(null); // Track toggle in progress
+  const [localStatusOverrides, setLocalStatusOverrides] = useState<Record<string, string>>({}); // Local status cache
 
   const { data: coursesData, isLoading, error: coursesError, refetch: refetchCourses } = useQuery({
     queryKey: ['courses', levelFilter, statusFilter, searchQuery],
@@ -80,46 +81,22 @@ export function CoursesPage() {
     mutationFn: async (id: string) => {
       return await api.courses.publish(id);
     },
-    onMutate: async (id: string) => {
-      // Cancel outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ['courses'] });
-
-      // Snapshot the previous value
-      const previousData = queryClient.getQueryData(['courses', levelFilter, statusFilter, searchQuery]);
-
-      // Optimistically update to new value
-      queryClient.setQueryData(['courses', levelFilter, statusFilter, searchQuery], (old: any) => {
-        if (!old) return old;
-        let data = old;
-        if (data?.data?.data) {
-          data = {
-            ...data,
-            data: {
-              ...data.data,
-              data: data.data.data.map((c: any) => c.id === id ? { ...c, status: 'active' } : c),
-            },
-          };
-        } else if (Array.isArray(old?.data)) {
-          data = {
-            ...data,
-            data: old.data.map((c: any) => c.id === id ? { ...c, status: 'active' } : c),
-          };
-        }
-        return data;
-      });
-
-      return { previousData };
+    onMutate: (id: string) => {
+      // Immediately update local state for instant UI feedback
+      setLocalStatusOverrides(prev => ({ ...prev, [id]: 'active' }));
     },
     onSuccess: () => {
-      refetchCourses(); // Verify with server
+      refetchCourses();
       setPendingToggle(null);
       toast({ title: 'Course published', description: 'Course is now active and visible' });
     },
-    onError: (err: any, id: string, context: any) => {
-      // Revert on error
-      if (context?.previousData) {
-        queryClient.setQueryData(['courses', levelFilter, statusFilter, searchQuery], context.previousData);
-      }
+    onError: (err: any, id: string) => {
+      // Remove override on error - revert to server data
+      setLocalStatusOverrides(prev => {
+        const updated = { ...prev };
+        delete updated[id];
+        return updated;
+      });
       setPendingToggle(null);
       toast({ title: 'Error', description: 'Failed to publish course', variant: 'destructive' });
     },
@@ -129,46 +106,22 @@ export function CoursesPage() {
     mutationFn: async (id: string) => {
       return await api.courses.unpublish(id);
     },
-    onMutate: async (id: string) => {
-      // Cancel outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ['courses'] });
-
-      // Snapshot the previous value
-      const previousData = queryClient.getQueryData(['courses', levelFilter, statusFilter, searchQuery]);
-
-      // Optimistically update to new value
-      queryClient.setQueryData(['courses', levelFilter, statusFilter, searchQuery], (old: any) => {
-        if (!old) return old;
-        let data = old;
-        if (data?.data?.data) {
-          data = {
-            ...data,
-            data: {
-              ...data.data,
-              data: data.data.data.map((c: any) => c.id === id ? { ...c, status: 'inactive' } : c),
-            },
-          };
-        } else if (Array.isArray(old?.data)) {
-          data = {
-            ...data,
-            data: old.data.map((c: any) => c.id === id ? { ...c, status: 'inactive' } : c),
-          };
-        }
-        return data;
-      });
-
-      return { previousData };
+    onMutate: (id: string) => {
+      // Immediately update local state for instant UI feedback
+      setLocalStatusOverrides(prev => ({ ...prev, [id]: 'inactive' }));
     },
     onSuccess: () => {
-      refetchCourses(); // Verify with server
+      refetchCourses();
       setPendingToggle(null);
       toast({ title: 'Course unpublished', description: 'Course is now inactive' });
     },
-    onError: (err: any, id: string, context: any) => {
-      // Revert on error
-      if (context?.previousData) {
-        queryClient.setQueryData(['courses', levelFilter, statusFilter, searchQuery], context.previousData);
-      }
+    onError: (err: any, id: string) => {
+      // Remove override on error - revert to server data
+      setLocalStatusOverrides(prev => {
+        const updated = { ...prev };
+        delete updated[id];
+        return updated;
+      });
       setPendingToggle(null);
       toast({ title: 'Error', description: 'Failed to unpublish course', variant: 'destructive' });
     },
@@ -551,29 +504,33 @@ export function CoursesPage() {
                           >
                             <Star className="w-4 h-4" fill={course.featured ? 'currentColor' : 'none'} />
                           </Button>
-                          {course.status === 'inactive' ? (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleTogglePublish(course.id, course.status)}
-                              title="Publish course"
-                              disabled={pendingToggle === course.id || publishMutation.isPending}
-                              className={pendingToggle === course.id ? 'text-yellow-500' : 'text-green-600'}
-                            >
-                              {pendingToggle === course.id ? 'Publishing...' : 'Publish'}
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleTogglePublish(course.id, course.status)}
-                              title="Unpublish course"
-                              disabled={pendingToggle === course.id || unpublishMutation.isPending}
-                              className={pendingToggle === course.id ? 'text-yellow-500' : 'text-orange-600'}
-                            >
-                              {pendingToggle === course.id ? 'Unpublishing...' : 'Unpublish'}
-                            </Button>
-                          )}
+                          {(() => {
+                            // Check local status override first, then fall back to course status
+                            const currentStatus = localStatusOverrides[course.id] || course.status;
+                            return currentStatus === 'inactive' ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleTogglePublish(course.id, currentStatus)}
+                                title="Publish course"
+                                disabled={pendingToggle === course.id || publishMutation.isPending}
+                                className={pendingToggle === course.id ? 'text-yellow-500' : 'text-green-600'}
+                              >
+                                {pendingToggle === course.id ? 'Publishing...' : 'Publish'}
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleTogglePublish(course.id, currentStatus)}
+                                title="Unpublish course"
+                                disabled={pendingToggle === course.id || unpublishMutation.isPending}
+                                className={pendingToggle === course.id ? 'text-yellow-500' : 'text-orange-600'}
+                              >
+                                {pendingToggle === course.id ? 'Unpublishing...' : 'Unpublish'}
+                              </Button>
+                            );
+                          })()}
                           <Button
                             variant="ghost"
                             size="sm"
